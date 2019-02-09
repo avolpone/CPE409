@@ -1,0 +1,331 @@
+module Freq_Counter (clock, iReset_N, SW1, SW2, iPixel, CDF_done, calc_start, calc_done, iPixel_new, re);
+//iX, iY);
+
+//=======================================================
+//  PORT declarations
+//=======================================================
+input re, SW1, SW2;
+//input [10:0] iX, iY;
+input	clock, iReset_N;
+input	[7:0] iPixel;
+output reg CDF_done;
+output reg calc_start;
+output reg calc_done;
+output reg [7:0] iPixel_new;
+
+//=======================================================
+//  Parameter declarations
+//=======================================================
+parameter PIX_RANGE = 255;
+
+/*
+// 64 x 64
+parameter LENGTH = 64;
+parameter WIDTH = 64;
+parameter AREA = (4096-1);
+*/
+
+
+// 128 x 128
+parameter LENGTH = 128;
+parameter WIDTH = 128;
+parameter AREA = (16384-1);
+
+
+//=======================================================
+//  REG/Wire declarations
+//=======================================================
+reg [256:0] count [256:0];
+reg [256:0] CDF [256:0];
+reg [31:0] temp;
+reg [31:0] CDF_temp;
+reg [31:0] temp_finished;
+reg [15:0] grey_min;
+reg [15:0] CDF_min;
+
+reg [31:0] CDF_start;
+reg [16:0] pixel_count;
+reg [31:0] CDF_counter = 0;
+
+
+//=======================================================
+//  Structural coding
+//=======================================================
+
+always @(posedge clock) //or negedge iReset_N) 
+begin
+
+	//=======================================================
+	// RESET
+	//=======================================================
+	if(iReset_N == 1) 
+	begin
+		pixel_count <= 0;
+		CDF_counter <= 0;
+		CDF_temp <= 0;
+		CDF_start <= 0;
+	/*
+		CDF_min <= 0;
+		CDF_done <= 0;
+		calc_start <= 0;
+		calc_done <= 0;
+		iPixel_new <= 0;
+	*/
+	end
+
+	//=======================================================
+	// ELSE, BEGIN COMPUTATIONS
+	//=======================================================
+	else if(iReset_N == 0)
+	begin
+	
+		// placeholder condition
+		if(calc_done == 0)
+		begin
+			
+			// if total pixel count < image area, do algorithm
+			if(pixel_count < AREA)
+			begin
+			
+				// add iPixel count to temp
+				temp <= count[iPixel];
+				temp <= temp + 1;
+				count[iPixel] <= temp;
+
+				// if this count is less than the CDF minimum count
+				if(count[iPixel] < CDF_min)
+				   CDF_min <= count[iPixel];		// make new temp count the CDF minimum			
+			
+				// increment total pixel count
+				pixel_count = pixel_count + 1;
+				
+			end
+
+			// if total pixel count is finished, begin CDF computations
+			else if(pixel_count >= AREA)
+			begin
+			
+					if(CDF_done == 0)
+						begin
+						/*
+							if(CDF_counter >= 255)
+							begin
+							
+								CDF_temp		<= CDF_temp + count[CDF_counter];
+							
+								CDF[CDF_counter] <= CDF_temp;
+							
+								CDF[iPixel] <= CDF_temp;
+								
+								CDF_done <= 1;
+							
+							end
+							
+							else if(CDF_counter >= 0 && CDF_counter < 255)
+							begin
+								
+								CDF_temp 	<= CDF_temp + count[CDF_counter];
+								
+								CDF[CDF_counter] <= CDF_temp;
+								
+								CDF_counter <= CDF_counter + 1;
+								
+							end
+						
+						end
+					
+						else if(CDF_done == 1)
+						begin
+						
+							temp <= (CDF[iPixel] - CDF_min);
+							temp <= temp * 255;
+							//temp_finished <= CDF[iPixel];
+							//temp_finished <= 8'b11111111;
+							temp_finished <= temp / (AREA-1);
+						
+						end
+					*/
+					if(CDF_counter >= 0 && CDF_counter <= 255)
+							begin
+							
+								temp <= count[CDF_counter];
+							
+								CDF_temp	<= CDF_temp + count[CDF_counter];
+							
+								CDF[CDF_counter] <= CDF_temp;
+							
+								CDF[iPixel] <= CDF_temp;
+								
+								CDF_counter <= CDF_counter + 1;
+								
+								CDF_start <= 0;
+								
+								
+								
+								/*
+								
+								temp <= count[CDF_counter];
+								
+								CDF_temp	<= CDF_temp + temp;
+							
+								CDF[CDF_counter] <= CDF_temp;
+							
+								//CDF[iPixel] <= CDF_temp;
+								
+								CDF_counter <= CDF_counter + 1;
+								
+								CDF_start <= 0;
+							*/
+							end
+							
+							else if(CDF_counter > 255)
+							begin
+								
+								if(CDF_start >= 0 && CDF_start <= 255)
+								begin
+									temp <= CDF[iPixel];
+									temp <= (temp - CDF_min);
+									temp <= temp * 255;
+
+									//CDF[iPixel] <= temp / AREA;
+									CDF[iPixel] <= 8'b11111111;
+
+									CDF_start <= CDF_start + 1;
+								end
+								
+								else if(CDF_start > 255)
+								begin
+									temp <= CDF[iPixel];
+									temp_finished <= temp;
+									//CDF_done <= 1;
+								end
+								
+							end
+						
+						end
+					
+						//else if(CDF_done == 1)
+						//begin
+						
+							//temp_finished <= 8'b11111111;
+						
+						//end
+						end
+			
+			/*
+			
+					if(CDF_done == 0)
+						begin
+						
+							CDF_counter = iPixel;
+							
+							CDF_done = 1;
+						
+						end
+						
+					else if(CDF_done == 1)
+					begin	
+					
+							if(CDF_counter <= grey_min)
+							begin
+								CDF_temp = CDF_temp + count[CDF_counter];
+								CDF[iPixel] = CDF_temp;
+								
+								temp = (CDF[iPixel] - CDF_min);
+								temp = temp * 255;
+								temp_finished = temp / (AREA-1);
+								
+								CDF_done = 0;
+							end
+							else if(CDF_counter > grey_min)
+							begin
+							
+								CDF_temp = CDF_temp + count[CDF_counter];
+							
+								CDF_counter = CDF_counter - 1;
+
+							end
+					
+					end
+						*/
+					
+					
+					
+					
+					//temp = CDF[iPixel];
+					//temp = temp + 1;
+					//temp = (temp - CDF_min);
+					//temp = temp * 255;
+					//temp = temp / (AREA-1);
+					//temp = temp / 64;
+					//iPixel_new = temp;
+
+					
+				
+			
+			//	temp = CDF[iPixel];
+				
+				/*
+				CDF[iPixel] = temp;
+				
+				if(temp < CDF_min && temp != 0)
+					CDF_min <= temp;
+					*/
+			
+			
+			
+			
+			end
+		
+		
+			/*
+					if(grey_min < 255)
+					begin	
+					
+						if(iPixel == grey_min)
+						begin
+							CDF_counter = CDF_counter + count[grey_min];
+						
+							temp = (CDF_counter - CDF_min);
+	
+							temp = temp * PIX_RANGE;
+						
+							temp = temp / AREA;
+						
+							CDF[iPixel] = temp;
+						end
+						
+						grey_min = grey_min + 1;
+		
+					end
+				
+					else if(grey_min > 255)
+					begin
+						temp = CDF[iPixel];
+						
+						iPixel_new = temp;
+					end
+						*/	
+							
+							
+						//CDF_counter = CDF_counter + 1;
+						//CDF_min = CDF_min + 1;
+						
+						//CDF[CDF_counter] = CDF[CDF_counter] + 1
+						
+						//CDF_counter = CDF_counter + 1;
+
+					//temp = iPixel + 1;
+		
+		// if SW1 off, show original image
+		if(SW1 == 0)
+			iPixel_new <= iPixel; // take old pixel and rewrite to output
+			
+		// if SW1 on, show modified pixel
+		else if(SW1 == 1)
+			iPixel_new <= temp_finished; 	// take modified pixel and rewrite to output
+			
+	end
+end
+
+endmodule

@@ -1,0 +1,2 @@
+Warning (10268): Verilog HDL information at Freq_Counter.v(55): always construct contains both blocking and non-blocking assignments File: D:/409/New folder/DE2_115_CAMERA_ORIG_WAVY/Freq_Counter.v Line: 55
+Warning (10273): Verilog HDL warning at Sdram_Control.v(320): extended using "x" or "z" File: D:/409/New folder/DE2_115_CAMERA_ORIG_WAVY/Sdram_Control/Sdram_Control.v Line: 320

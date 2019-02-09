@@ -1,0 +1,297 @@
+////////////////////////////////////////////////////////////////////////////////////
+// Image Initialization Module
+//
+// ---------------------------------------------------------------------------------
+// Description:
+// ---------------------------------------------------------------------------------
+// This module initializes memory to the provided image file to be displayed
+// to the screen via VGA.
+// 
+// Revision History :
+// ---------------------------------------------------------------------------------
+//   Ver  :| Author(s)     :| Mod. Date  :| Changes Made:
+//   V1.0 :| Reiner Dizon  :| 08/28/2017 :| Initial Code
+// ---------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////
+
+module image_init_unit(CDF_done, calc_done, newPixel, sw1, sw2, rClk, re, ra, rd, rd_temp, iX, iY);
+
+//=======================================================
+//  PORT declarations
+//=======================================================
+input CDF_done, calc_done;
+input	[DATA_WIDTH-1:0] newPixel;
+input sw1, sw2, rClk, re;
+input [10:0] iX, iY;
+input [ADDR_WIDTH-1:0] ra;
+output reg [DATA_WIDTH-1:0] rd;
+output reg [DATA_WIDTH-1:0] rd_temp;
+
+//=======================================================
+//  REG/Wire declarations
+//=======================================================
+reg [ADDR_WIDTH-1 : 0] mem  [0 : RAM_DEPTH-1];	// OLD HISTOGRAM
+//reg [ADDR_WIDTH-1 : 0] hist [0 : RAM_DEPTH-1];	// NEW HISTOGRAM
+
+//=======================================================
+//  PARAMETER declarations
+//=======================================================
+parameter DATA_WIDTH =  8;
+parameter ADDR_WIDTH =  14;
+parameter RAM_DEPTH  =  (1 << ADDR_WIDTH);
+
+//=======================================================
+//  Structural coding
+//=======================================================
+
+// Memory Initialization Code - change the file name & size parameters for different images
+// 128 x 128
+initial $readmemh ("memfile2.dat", mem);
+parameter WIDTH = 128;
+parameter HEIGHT = 128;
+
+/*
+// 64 x 64
+initial $readmemh ("memfile1.dat", mem);
+parameter WIDTH = 64;
+parameter HEIGHT = 64;
+*/
+
+// CODE - Read & Write
+always @ (posedge rClk) begin
+
+// WRITE TO NEW HISTOGRAM
+/*
+	if(re == 0 && calc_done == 0) begin
+		if	(iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+			hist[iX * WIDTH + iY] = newPixel;
+	end
+*/
+
+// ELSE READ FROM OLD HISTOGRAM
+	//if(re == 1) begin
+		if	(iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+			rd_temp <= mem[iX * WIDTH + iY];
+			
+// debugging - attempt to push new pixel out immediately
+		if	(iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+			rd <= newPixel;
+//		else if	(sw1 && iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+//			rd <= mem[iX * WIDTH + iY];
+//		else if	(sw2 && calc_done == 1 && iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)		
+//		begin
+//			rd = hist[iX * WIDTH + iY];
+//		end
+//		else if	(iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+//			rd_temp <= mem[iX * WIDTH + iY];
+		else	
+			rd <= 0;
+	//end
+end
+
+endmodule
+
+
+/*
+
+////////////////////////////////////////////////////////////////////////////////////
+// Image Initialization Module
+//
+// ---------------------------------------------------------------------------------
+// Description:
+// ---------------------------------------------------------------------------------
+// This module initializes memory to the provided image file to be displayed
+// to the screen via VGA.
+// 
+// Revision History :
+// ---------------------------------------------------------------------------------
+//   Ver  :| Author(s)     :| Mod. Date  :| Changes Made:
+//   V1.0 :| Reiner Dizon  :| 08/28/2017 :| Initial Code
+// ---------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////
+
+module image_init_unit(sw1, sw2, rClk, re, ra, rd, iX, iY);
+
+parameter DATA_WIDTH = 8;
+parameter ADDR_WIDTH = 14;
+parameter RAM_DEPTH = (1 << ADDR_WIDTH);
+
+//=======================================================
+//  PORT declarations
+//=======================================================
+input sw1, sw2, rClk, re;
+input [10:0] iX, iY;
+input [ADDR_WIDTH-1:0] ra;
+output reg [DATA_WIDTH-1:0] rd;
+reg [DATA_WIDTH-1:0] rd_eq;
+
+//=======================================================
+//  REG/Wire declarations
+//=======================================================
+reg [ADDR_WIDTH-1 : 0] mem [0 : RAM_DEPTH-1];	// INTERNAL MEMORY
+
+reg[DATA_WIDTH-1:0] hist[7:0][7:0];
+reg[DATA_WIDTH-1:0] hist_eq[7:0][7:0];
+
+//=======================================================
+//  PARAMETER declarations
+//=======================================================
+
+
+//=======================================================
+//  Structural coding
+//=======================================================
+
+// Memory Initialization Code - change the file name & size parameters for different images
+//initial $readmemh ("imtextHist.txt", mem);
+//reg x[10:0];
+//reg y[10:0];
+//parameter WIDTH = 110;
+//parameter HEIGHT = 145;
+initial $readmemh ("memfile2.dat", mem);
+parameter WIDTH = 128;
+parameter HEIGHT = 128;
+parameter PIXEL_DEPTH = 255;
+parameter IMAGE_SIZE = 16384;
+
+reg scanDone = 0;
+
+reg [DATA_WIDTH-1:0] temp;
+
+reg [15:0] totalPixels = 0;
+reg [15:0] eq_totalPixels = 0;
+reg [7:0] CEF_min = 0;
+reg [7:0] CEF[7:0];
+
+// CODE - Read & Write
+always @ (posedge rClk) 
+begin
+	if(re) 
+	begin
+
+		// =========================================================
+		// LOAD UNEQUALIZED HISTOGRAM
+		// =========================================================
+		if(iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+		begin
+			rd_eq = mem[iX * HEIGHT + iY];
+			
+			//CEF[rd_eq] <= CEF[rd_eq] + 1;
+			//	
+			//if(CEF[rd_eq] < CEF_min)
+			//	CEF_min <= CEF[rd_eq];
+			//	
+			//rd <= CEF[rd_eq];
+			
+			//end
+			
+			
+		//	- CEF_min) / (IMAGE_SIZE)) * PIXEL_DEPTH;
+			//rd <= CEF[rd_eq];
+			/*
+			
+				rd_eq <= ((CEF[rd_eq] - CEF_min) / (IMAGE_SIZE)) * PIXEL_DEPTH;
+			//end
+			
+			//else if(totalPixels == IMAGE_SIZE)
+				rd <= rd_eq;
+				
+		end
+		
+				
+			else
+				rd <= 0;
+	end
+end
+
+endmodule
+
+// CODE - Read & Write
+always @ (posedge rClk) 
+begin
+	if(re) 
+	begin
+
+		// =========================================================
+		// LOAD UNEQUALIZED HISTOGRAM
+		// =========================================================
+		if(iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+			// load memory value into standard histogram matrix
+			hist[iX][iY] <= mem[iX * HEIGHT + iY];
+		
+		// =========================================================
+		// HISTOGRAM EQUALIZATION ALGORITHM
+		// =========================================================
+		if(sw1 == 0 && sw2 == 0 && iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+		begin
+		
+			//rd <= mem[iX * HEIGHT + iY];
+		
+			//hist[iX][iY] <= mem[iX * HEIGHT + iY];
+		
+				// SCAN IMAGE FOR PIXEL INTENSITIES
+				// ---------------------------------------------------------
+				if(totalPixels < IMAGE_SIZE)
+				begin
+				
+					// increment pixel counter
+					totalPixels <= totalPixels + 1;
+				
+					// CUMULATIVE EQUALIZATION FUNCTION
+					// ---------------------------------------------------------
+					//hist_eq[iX][iY] <= CEF[hist[iX][iY]];
+					CEF[hist[iX][iY]] <= CEF[hist[iX][iY]] + 1;
+					
+				end
+				
+				// IF SCAN COMPLETED...
+				// ---------------------------------------------------------
+				else if(totalPixels == IMAGE_SIZE)
+				begin
+				
+					// if there is a count from the CEF
+					if(CEF[mem[iX * HEIGHT + iY]] > 0 && eq_totalPixels < IMAGE_SIZE)
+					begin
+					
+						// perform equalization algorithm
+						hist_eq[iX][iY] <= ((CEF[mem[iX * HEIGHT + iY]] - 1) / (IMAGE_SIZE)) * PIXEL_DEPTH;
+						//hist_eq[iX][iY] <= 8'b10101010;
+						
+						// increment counter for algorithm
+						eq_totalPixels <= eq_totalPixels + 1;
+						
+					end
+					
+				end
+
+		end
+		
+		// =========================================================
+		// DISPLAY OPTIONS
+		// =========================================================
+		
+			// SHOW UNALTERED HISTOGRAM
+			// ---------------------------------------------------------		
+			else if (sw1 == 1 && sw2 == 0 && iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+			// && iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+			begin
+				//hist[iX][iY] <= mem[iX * HEIGHT + iY];
+				rd <= hist[iX][iY];
+			end
+				
+			// SHOW EQUALIZED HISTOGRAM
+			// ---------------------------------------------------------	
+			else if (sw1 == 0 && sw2 == 1 && iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+				rd <= hist_eq[iX][iY];
+				
+			// CLEAR SCREEN
+			// ---------------------------------------------------------	
+			else if (sw1 == 1 && sw2 == 1 && iY >= 0 && iY < HEIGHT && iX >= 0 && iX < WIDTH)
+				rd <= 8'b00000000;
+				
+			else
+				rd <= 0;
+	end
+end
+
+*/
